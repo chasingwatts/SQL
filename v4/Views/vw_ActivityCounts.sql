@@ -19,11 +19,4 @@ FROM Activity A
 	LEFT OUTER JOIN (SELECT ActivityID, COUNT(ActivityViewID) AS ViewCount FROM ActivityView GROUP BY ActivityID) V ON A.ActivityID = V.ActivityID
 	LEFT OUTER JOIN (SELECT ActivityID, COUNT(ActivityLikeID) AS LikeCount FROM ActivityLike GROUP BY ActivityID) L ON A.ActivityID = L.ActivityID
 	LEFT OUTER JOIN (SELECT ActivityID, COUNT(ActivityChatID) AS ChatCount FROM ActivityChat GROUP BY ActivityID) C ON A.ActivityID = C.ActivityID
-	LEFT OUTER JOIN (
-		SELECT
-			G.ActivityID,
-			COUNT(R.ActivityRosterID) AS RosterCount
-		FROM ActivityRosterGroup G
-			LEFT OUTER JOIN ActivityRoster R ON G.ActivityRosterGroupID = R.ActivityRosterGroupID
-		WHERE R.ResponseTypeID <> 3 --no
-		GROUP BY G.ActivityID) R ON A.ActivityID = R.ActivityID
+	LEFT OUTER JOIN (SELECT ActivityID, COUNT(ActivityRosterID) AS RosterCount FROM ActivityRoster WHERE ResponseTypeID <> 3 GROUP BY ActivityID) R ON A.ActivityID = R.ActivityID
