@@ -52,20 +52,11 @@ SELECT
 	A.StartLat AS EntityLat,
 	A.StartLng AS EntityLng,
 	A.IsPrivate AS EntityPrivate,
-	CONVERT(bit, CASE WHEN UR.ResponseTypeID IS NOT NULL THEN 1 ELSE 0 END) AS EntityRosterOrConnected
+	CONVERT(bit, CASE WHEN R.ResponseTypeID IS NOT NULL THEN 1 ELSE 0 END) AS EntityRosterOrConnected
 FROM (SELECT *, geography::Point(StartLat, StartLng, 4326) AS ActivityGeoPt FROM Activity) A
-LEFT OUTER JOIN (
-	SELECT
-		G.ActivityID,
-		G.GroupName,
-		R.ResponseTypeID,
-		T.ResponseTypeName,
-		T.ResponseColor,
-		R.CreatedBy AS UserID
-	FROM ActivityRosterGroup G
-		LEFT OUTER JOIN ActivityRoster R ON G.ActivityRosterGroupID = R.ActivityRosterGroupID
-		LEFT OUTER JOIN ResponseType T ON R.ResponseTypeID = T.ResponseTypeID
-) UR ON A.ActivityID = UR.ActivityID AND UR.UserID = @UserID
+LEFT OUTER JOIN ActivityRoster R ON A.ActivityID = R.ActivityID
+	AND R.CreatedBy = @UserID
+LEFT OUTER JOIN ResponseType T ON R.ResponseTypeID = T.ResponseTypeID
 WHERE A.IsDeleted = 0
 			AND CONVERT(datetime, ActivityDate) + CONVERT(datetime, ActivityStartTime) >= GETDATE()
 			AND CONVERT(datetime, ActivityDate) + CONVERT(datetime, ActivityStartTime) <= DATEADD(D, 6, GETDATE())

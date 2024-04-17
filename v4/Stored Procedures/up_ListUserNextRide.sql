@@ -64,6 +64,7 @@ SELECT TOP 1
 	A.IsPrivate,
 	A.IsCancelled,
 	A.IsPromoted,
+	A.IsGroup,
 	A.HasWaiver,
 	A.IsCommunity,
 	A.IsDrop,
@@ -84,9 +85,10 @@ SELECT TOP 1
 	ISNULL(C.ChatCount, 0) AS ChatCount,
 	ISNULL(R.RosterCount, 0) AS RosterCount,
 	CONVERT(bit, CASE WHEN UL.ActivityLikeID IS NOT NULL THEN 1 ELSE 0 END) AS UserHasLiked,
-	CONVERT(bit, CASE WHEN UR.ResponseTypeID IS NOT NULL THEN 1 ELSE 0 END) AS UserInRoster,
-	UR.ResponseTypeName AS UserResponseName,
-	UR.ResponseColor AS UserResponseColor,
+	CONVERT(bit, CASE WHEN AR.ResponseTypeID IS NOT NULL THEN 1 ELSE 0 END) AS UserInRoster,
+	T.ResponseTypeName AS UserResponseName,
+	T.ResponseColor AS UserResponseColor,
+	AR.GroupLevel,
 	A.IsDeleted,
 	A.CreatedBy,
 	A.CreatedDate,
@@ -100,25 +102,11 @@ LEFT OUTER JOIN HubType HT ON H.HubTypeID = HT.HubTypeID
 LEFT OUTER JOIN (SELECT ActivityID, COUNT(ActivityViewID) AS ViewCount FROM ActivityView GROUP BY ActivityID) V ON A.ActivityID = V.ActivityID
 LEFT OUTER JOIN (SELECT ActivityID, COUNT(ActivityLikeID) AS LikeCount FROM ActivityLike GROUP BY ActivityID) L ON A.ActivityID = L.ActivityID
 LEFT OUTER JOIN (SELECT ActivityID, COUNT(ActivityChatID) AS ChatCount FROM ActivityChat GROUP BY ActivityID) C ON A.ActivityID = C.ActivityID
-LEFT OUTER JOIN (
-	SELECT G.ActivityID, COUNT(R.ActivityRosterID) AS RosterCount
-	FROM ActivityRosterGroup G
-		LEFT OUTER JOIN ActivityRoster R ON G.ActivityRosterGroupID = R.ActivityRosterGroupID
-	WHERE R.ResponseTypeID <> 3 --no
-	GROUP BY G.ActivityID) R ON A.ActivityID = R.ActivityID
+LEFT OUTER JOIN (SELECT R.ActivityID, COUNT(R.ActivityRosterID) AS RosterCount FROM ActivityRoster R WHERE R.ResponseTypeID <> 3 GROUP BY R.ActivityID) R ON A.ActivityID = R.ActivityID
 LEFT OUTER JOIN (SELECT ActivityLikeID, ActivityID, CreatedBy FROM ActivityLike) UL ON A.ActivityID = UL.ActivityID AND UL.CreatedBy = @UserID
-LEFT OUTER JOIN (
-	SELECT
-		G.ActivityID,
-		G.GroupName,
-		R.ResponseTypeID,
-		T.ResponseTypeName,
-		T.ResponseColor,
-		R.CreatedBy AS UserID
-	FROM ActivityRosterGroup G
-		LEFT OUTER JOIN ActivityRoster R ON G.ActivityRosterGroupID = R.ActivityRosterGroupID
-		LEFT OUTER JOIN ResponseType T ON R.ResponseTypeID = T.ResponseTypeID
-) UR ON A.ActivityID = UR.ActivityID AND UR.UserID = @UserID
+LEFT OUTER JOIN ActivityRoster AR ON A.ActivityID = AR.ActivityID
+	AND AR.CreatedBy = @UserID
+LEFT OUTER JOIN ResponseType T ON AR.ResponseTypeID = T.ResponseTypeID
 WHERE A.IsDeleted = 0
 			AND CONVERT(datetime, ActivityDate) + CONVERT(datetime, ActivityStartTime) >= GETDATE()
 			AND CONVERT(datetime, ActivityDate) + CONVERT(datetime, ActivityStartTime) <= DATEADD(D, 6, GETDATE())

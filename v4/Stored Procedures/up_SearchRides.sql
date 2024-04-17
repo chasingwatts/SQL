@@ -26,7 +26,7 @@ AS
 --******************************************************************************/
 -- ============================================================================
 -- Testing Parms
--- EXEC up_SearchRides 1, 29.4564, -95.46546, 20000, null, null, null, null, null, null, null
+-- EXEC up_SearchRides 1, 29.4564, -95.46546, 200, null, null, null, null, null, null, null
 
  --DECLARE @UserID varchar(100)
  --DECLARE @Radius float
@@ -87,6 +87,7 @@ SELECT
 	A.IsPrivate,
 	A.IsCancelled,
 	A.IsPromoted,
+	A.IsGroup,
 	A.HasWaiver,
 	A.IsCommunity,
 	A.IsDrop,
@@ -107,47 +108,34 @@ SELECT
 	ISNULL(C.ChatCount, 0) AS ChatCount,
 	ISNULL(R.RosterCount, 0) AS RosterCount,
 	CONVERT(bit, CASE WHEN UL.ActivityLikeID IS NOT NULL THEN 1 ELSE 0 END) AS UserHasLiked,
-	CONVERT(bit, CASE WHEN UR.ResponseTypeID IS NOT NULL THEN 1 ELSE 0 END) AS UserInRoster,
-	UR.ResponseTypeName AS UserResponseName,
-	UR.ResponseColor AS UserResponseColor,
+	CONVERT(bit, CASE WHEN AR.ResponseTypeID IS NOT NULL THEN 1 ELSE 0 END) AS UserInRoster,
+	T.ResponseTypeName AS UserResponseName,
+	T.ResponseColor AS UserResponseColor,
+	AR.GroupLevel,
 	A.IsDeleted,
 	A.CreatedBy,
 	A.CreatedDate,
 	A.ModifiedBy,
 	A.ModifiedDate
 FROM (SELECT *, geography::Point(StartLat, StartLng, 4326) AS ActivityGeoPt FROM Activity) A
-LEFT OUTER JOIN ActivityRoute AR ON A.ActivityID = AR.ActivityID
-INNER JOIN ActivityType AT ON A.ActivityTypeID = AT.ActivityTypeID
-INNER JOIN UserProfile U ON A.UserID = U.UserID
-LEFT OUTER JOIN Hub H ON A.TeamID = H.HubID
-LEFT OUTER JOIN HubType HT ON H.HubTypeID = HT.HubTypeID
-LEFT OUTER JOIN (SELECT ActivityID, COUNT(ActivityViewID) AS ViewCount FROM ActivityView GROUP BY ActivityID) V ON A.ActivityID = V.ActivityID
-LEFT OUTER JOIN (SELECT ActivityID, COUNT(ActivityLikeID) AS LikeCount FROM ActivityLike GROUP BY ActivityID) L ON A.ActivityID = L.ActivityID
-LEFT OUTER JOIN (SELECT ActivityID, COUNT(ActivityChatID) AS ChatCount FROM ActivityChat GROUP BY ActivityID) C ON A.ActivityID = C.ActivityID
-LEFT OUTER JOIN (
-	SELECT G.ActivityID, COUNT(R.ActivityRosterID) AS RosterCount
-	FROM ActivityRosterGroup G
-		LEFT OUTER JOIN ActivityRoster R ON G.ActivityRosterGroupID = R.ActivityRosterGroupID
-	WHERE R.ResponseTypeID <> 3 --no
-	GROUP BY G.ActivityID) R ON A.ActivityID = R.ActivityID
-LEFT OUTER JOIN (SELECT ActivityLikeID, ActivityID, CreatedBy FROM ActivityLike) UL ON A.ActivityID = UL.ActivityID AND UL.CreatedBy = @UserID
-LEFT OUTER JOIN (
-	SELECT
-		G.ActivityID,
-		G.GroupName,
-		R.ResponseTypeID,
-		T.ResponseTypeName,
-		T.ResponseColor,
-		R.CreatedBy AS UserID
-	FROM ActivityRosterGroup G
-		LEFT OUTER JOIN ActivityRoster R ON G.ActivityRosterGroupID = R.ActivityRosterGroupID
-		LEFT OUTER JOIN ResponseType T ON R.ResponseTypeID = T.ResponseTypeID
-) UR ON A.ActivityID = UR.ActivityID AND UR.UserID = @UserID
+	INNER JOIN ActivityType AT ON A.ActivityTypeID = AT.ActivityTypeID
+	INNER JOIN UserProfile U ON A.UserID = U.UserID
+	LEFT OUTER JOIN Hub H ON A.TeamID = H.HubID
+	LEFT OUTER JOIN HubType HT ON H.HubTypeID = HT.HubTypeID
+	LEFT OUTER JOIN (SELECT ActivityID, COUNT(ActivityViewID) AS ViewCount FROM ActivityView GROUP BY ActivityID) V ON A.ActivityID = V.ActivityID
+	LEFT OUTER JOIN (SELECT ActivityID, COUNT(ActivityLikeID) AS LikeCount FROM ActivityLike GROUP BY ActivityID) L ON A.ActivityID = L.ActivityID
+	LEFT OUTER JOIN (SELECT ActivityID, COUNT(ActivityChatID) AS ChatCount FROM ActivityChat GROUP BY ActivityID) C ON A.ActivityID = C.ActivityID
+	LEFT OUTER JOIN (SELECT R.ActivityID, COUNT(R.ActivityRosterID) AS RosterCount FROM ActivityRoster R WHERE R.ResponseTypeID <> 3 GROUP BY R.ActivityID) R ON A.ActivityID = R.ActivityID
+	LEFT OUTER JOIN (SELECT ActivityLikeID, ActivityID, CreatedBy FROM ActivityLike) UL ON A.ActivityID = UL.ActivityID AND UL.CreatedBy = @UserID
+	LEFT OUTER JOIN ActivityRoster AR ON A.ActivityID = AR.ActivityID
+		AND AR.CreatedBy = @UserID
+	LEFT OUTER JOIN ResponseType T ON AR.ResponseTypeID = T.ResponseTypeID
+	LEFT OUTER JOIN ActivityRoute RT ON A.ActivityID = RT.ActivityID
 WHERE A.IsDeleted = 0
 	AND ActivityGeoPt.STDistance(@CurrentLocation) < (@Radius * @MetersPerMile)
 	AND A.ActivityName LIKE COALESCE(@ActivityName, A.ActivityName)
 	AND A.ActivityTypeID = COALESCE(@ActivityTypeID, A.ActivityTypeID)
 	AND A.ActivityDate BETWEEN @StartDate AND @EndDate
-	AND AR.DifficultyLevelID = COALESCE(@DifficultyLevelID, AR.DifficultyLevelID)
-	AND AR.Distance BETWEEN @MinDistance AND @MaxDistance
+	AND RT.DifficultyLevelID = COALESCE(@DifficultyLevelID, RT.DifficultyLevelID)
+	AND RT.Distance BETWEEN @MinDistance AND @MaxDistance
 ORDER BY IsPromoted DESC

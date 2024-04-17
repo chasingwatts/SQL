@@ -24,13 +24,13 @@ AS
 
 SELECT
 	R.CreatedBy AS UserID,
-	COUNT(R.ActivityRosterID) AS RideCount,
-	CONVERT(int, SUM(ROUND(RTE.Distance, 0))) AS RideDistance,
+	COUNT(RS.ActivityRosterID) AS RideCount,
+	CONVERT(int, SUM(ROUND(R.Distance, 0))) AS RideDistance,
 	COUNT(F.FriendCount) AS FriendCount
-FROM ActivityRosterGroup ARG
-	LEFT OUTER JOIN ActivityRoute RTE ON ARG.ActivityRouteID = RTE.ActivityRouteID
-	LEFT OUTER JOIN ActivityRoster R ON ARG.ActivityRosterGroupID = R.ActivityRosterGroupID
-	LEFT OUTER JOIN ResponseType RT ON R.ResponseTypeID = RT.ResponseTypeID
+FROM Activity A	
+	LEFT OUTER JOIN ActivityRoute R ON A.ActivityID = R.ActivityID
+	LEFT OUTER JOIN ActivityRoster RS ON A.ActivityID = RS.ActivityID
+	LEFT OUTER JOIN ResponseType RT ON RS.ResponseTypeID = RT.ResponseTypeID
 	LEFT OUTER JOIN UserProfile U ON R.CreatedBy = U.UserID
 	LEFT OUTER JOIN (
 		SELECT UserID, COUNT(FollowingID) AS FriendCount FROM UserFollowing
@@ -38,6 +38,6 @@ FROM ActivityRosterGroup ARG
 		GROUP BY UserID
 	) F ON R.CreatedBy = F.UserID
 WHERE R.CreatedBy = @UserID
-	AND ARG.IsDeleted = 0
+	AND A.IsDeleted = 0
 GROUP BY R.CreatedBy
 
