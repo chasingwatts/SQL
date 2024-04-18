@@ -87,10 +87,10 @@ SELECT
 	H.HubName,
 	HT.HubTypeName,
 	CASE
-		WHEN A.IsPrivate = 1 AND A.TeamID IS NOT NULL THEN 'Private ' + HT.HubTypeName + ' Ride'
-		WHEN A.IsPrivate = 0 AND A.TeamID IS NOT NULL THEN 'Public ' + HT.HubTypeName + ' Ride'
-		WHEN A.IsPrivate = 1 AND A.TeamID IS NULL THEN 'Private Ride'
-		WHEN A.IsPrivate = 0 AND A.TeamID IS NULL THEN 'Public Ride'
+		WHEN A.IsPrivate = 1 AND A.TeamID > 0 THEN 'Private ' + HT.HubTypeName + ' Ride'
+		WHEN A.IsPrivate = 0 AND A.TeamID > 0 THEN 'Public ' + HT.HubTypeName + ' Ride'
+		WHEN A.IsPrivate = 1 AND A.TeamID = 0 THEN 'Private Ride'
+		WHEN A.IsPrivate = 0 AND A.TeamID = 0 THEN 'Public Ride'
 		ELSE 'Let''s Ride'
 	END AS ViewStatus,
 	ISNULL(V.ViewCount, 0) AS ViewCount,

@@ -1,14 +1,15 @@
 USE [Mortis]
 GO
 
-DROP PROCEDURE IF EXISTS up_RideEmailUserNotification
+DROP PROCEDURE IF EXISTS up_NotificationNewRideEmailDevice
 GO
 
-CREATE PROCEDURE up_RideEmailUserNotification
-	@ActivityID int
+CREATE PROCEDURE up_NotificationNewRideEmailDevice
+	@ActivityID int,
+	@Type int -- 1: device, 2: email
 AS
 /******************************************************************************
-*  DBA Script: up_RideEmailUserNotification
+*  DBA Script: up_NotificationNewRideEmailDevice
 *  Created By: Jason Codianne 
 *  Created:    01/17/2018 
 *  Schema:     dbo
@@ -16,37 +17,23 @@ AS
 ******************************************************************************/
 -- ============================================================================
 -- Testing Parms
--- EXEC up_RideEmailUserNotification 10
+-- EXEC up_NotificationNewRideEmailDevice 10
 -- DECLARE @ActivityID int
 -- SET @ActivityID = 30834
 -- ============================================================================
 
-DECLARE @ActivityName varchar(200)
-DECLARE @ActivityDate date
 DECLARE @MetersPerMile float = 1609.344
 DECLARE @CurrentLocation geography; 
-DECLARE @RideCreator varchar(500)
-DECLARE @IsCommunity bit
 
 SELECT 
-	@ActivityName = A.ActivityName, 
-	@ActivityDate = A.ActivityDate,
-	@RideCreator = U.FirstName + ' ' + U.LastName,
-	@IsCommunity = A.IsCommunity,
 	@CurrentLocation = geography::Point(StartLat, StartLng, 4326) 
 FROM Activity A
-	INNER JOIN UserProfile U ON A.UserID = U.UserID
 WHERE ActivityID = @ActivityID
 
 SELECT DISTINCT 
 	X.UserID, 
-	X.DefaultRadius, 
 	X.Email,
-	@ActivityID AS ActivityID,
-	@ActivityName AS ActivityName,
-	@ActivityDate AS ActivityDate,
-	@RideCreator AS RideCreator,
-	@IsCommunity AS IsCommunity
+	@ActivityID AS ActivityID
 FROM ( 
 	SELECT 
 		P.UserID, 
