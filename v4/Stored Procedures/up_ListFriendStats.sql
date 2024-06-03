@@ -26,7 +26,7 @@ SELECT
 	R.CreatedBy AS UserID,
 	COUNT(RS.ActivityRosterID) AS RideCount,
 	CONVERT(int, SUM(ROUND(R.Distance, 0))) AS RideDistance,
-	COUNT(F.FriendCount) AS FriendCount
+	MAX(F.FriendCount) AS FriendCount
 FROM Activity A	
 	LEFT OUTER JOIN ActivityRoute R ON A.ActivityID = R.ActivityID
 	LEFT OUTER JOIN ActivityRoster RS ON A.ActivityID = RS.ActivityID

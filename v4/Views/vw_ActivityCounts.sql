@@ -4,10 +4,22 @@ GO
 DROP VIEW IF EXISTS vw_ActivityCounts
 GO
 
---SELECT * FROM vw_ActivityCounts
-
 CREATE VIEW vw_ActivityCounts
 AS
+
+/******************************************************************************
+*  Script Name:  	vw_ActivityCounts
+*  Created By:  	PETERMAN\Jason 
+*  Created Date:  	2024-05-31
+*  Schema:  		dbo
+*  Purpose:			
+*  Updates:			
+******************************************************************************/
+-- ============================================================================
+-- Testing Parms/Example
+-- SELECT * FROM vw_ActivityCounts
+  
+-- ============================================================================
 
 SELECT 
 	A.ActivityID,

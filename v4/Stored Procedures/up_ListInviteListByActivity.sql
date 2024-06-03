@@ -14,7 +14,7 @@ AS
 SELECT * FROM UserFollowing F
 WHERE F.UserID = @UserID
 	AND F.IsConfirmed = 1
-	AND F.FollowingID NOT IN (SELECT UserID FROM ActivityInvite WHERE UserID = F.FollowingID AND ActivityID = @ActivityID)
+	AND F.FollowingID NOT IN (SELECT InviteUserID FROM ActivityInvite WHERE InviteUserID = F.FollowingID AND ActivityID = @ActivityID)
 	AND F.FollowingID NOT IN (
 		SELECT ISNULL(R.CreatedBy, 0) FROM Activity A
 			LEFT OUTER JOIN ActivityRoster R ON A.ActivityID = R.ActivityID

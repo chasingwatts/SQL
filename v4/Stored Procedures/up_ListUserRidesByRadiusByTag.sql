@@ -100,22 +100,30 @@ SELECT
 	A.ModifiedBy,
 	A.ModifiedDate
 FROM (SELECT *, geography::Point(StartLat, StartLng, 4326) AS ActivityGeoPt FROM Activity) A
-INNER JOIN ActivityType AT ON A.ActivityTypeID = AT.ActivityTypeID
-INNER JOIN ActivityTag TG ON A.ActivityID = TG.ActivityID
-INNER JOIN UserProfile U ON A.UserID = U.UserID
-LEFT OUTER JOIN Hub H ON A.TeamID = H.HubID
-LEFT OUTER JOIN HubType HT ON H.HubTypeID = HT.HubTypeID
-LEFT OUTER JOIN (SELECT ActivityID, COUNT(ActivityViewID) AS ViewCount FROM ActivityView GROUP BY ActivityID) V ON A.ActivityID = V.ActivityID
-LEFT OUTER JOIN (SELECT ActivityID, COUNT(ActivityLikeID) AS LikeCount FROM ActivityLike GROUP BY ActivityID) L ON A.ActivityID = L.ActivityID
-LEFT OUTER JOIN (SELECT ActivityID, COUNT(ActivityChatID) AS ChatCount FROM ActivityChat GROUP BY ActivityID) C ON A.ActivityID = C.ActivityID
-LEFT OUTER JOIN (SELECT R.ActivityID, COUNT(R.ActivityRosterID) AS RosterCount FROM ActivityRoster R WHERE R.ResponseTypeID <> 3 GROUP BY R.ActivityID) R ON A.ActivityID = R.ActivityID
-LEFT OUTER JOIN (SELECT ActivityLikeID, ActivityID, CreatedBy FROM ActivityLike) UL ON A.ActivityID = UL.ActivityID AND UL.CreatedBy = @UserID
-LEFT OUTER JOIN ActivityRoster AR ON A.ActivityID = AR.ActivityID
-	AND AR.CreatedBy = @UserID
-LEFT OUTER JOIN ResponseType T ON AR.ResponseTypeID = T.ResponseTypeID
+	INNER JOIN ActivityType AT ON A.ActivityTypeID = AT.ActivityTypeID
+	INNER JOIN ActivityTag TG ON A.ActivityID = TG.ActivityID
+	INNER JOIN UserProfile U ON A.UserID = U.UserID
+	LEFT OUTER JOIN Hub H ON A.TeamID = H.HubID
+	LEFT OUTER JOIN HubType HT ON H.HubTypeID = HT.HubTypeID
+	LEFT OUTER JOIN (SELECT ActivityID, COUNT(ActivityViewID) AS ViewCount FROM ActivityView GROUP BY ActivityID) V ON A.ActivityID = V.ActivityID
+	LEFT OUTER JOIN (SELECT ActivityID, COUNT(ActivityLikeID) AS LikeCount FROM ActivityLike GROUP BY ActivityID) L ON A.ActivityID = L.ActivityID
+	LEFT OUTER JOIN (SELECT ActivityID, COUNT(ActivityChatID) AS ChatCount FROM ActivityChat GROUP BY ActivityID) C ON A.ActivityID = C.ActivityID
+	LEFT OUTER JOIN (SELECT R.ActivityID, COUNT(R.ActivityRosterID) AS RosterCount FROM ActivityRoster R WHERE R.ResponseTypeID <> 3 GROUP BY R.ActivityID) R ON A.ActivityID = R.ActivityID
+	LEFT OUTER JOIN (SELECT ActivityLikeID, ActivityID, CreatedBy FROM ActivityLike) UL ON A.ActivityID = UL.ActivityID AND UL.CreatedBy = @UserID
+	LEFT OUTER JOIN ActivityRoster AR ON A.ActivityID = AR.ActivityID
+		AND AR.CreatedBy = @UserID
+	LEFT OUTER JOIN ResponseType T ON AR.ResponseTypeID = T.ResponseTypeID
 WHERE A.IsDeleted = 0
 	AND CONVERT(datetime, ActivityDate) + CONVERT(datetime, ActivityStartTime) >= GETDATE()
 	AND CONVERT(datetime, ActivityDate) + CONVERT(datetime, ActivityStartTime) <= DATEADD(D, 6, GETDATE())
 	AND ActivityGeoPt.STDistance(@CurrentLocation) < @Radius * @MetersPerMile
 	AND TG.ActivityTagName = @TagName
+	AND (
+		A.[IsPrivate] = 0  --not private
+			OR A.TeamID IN (SELECT DISTINCT H.HubID FROM Hub H LEFT OUTER JOIN HubMember HM ON H.HubID = HM.HubID WHERE (HM.UserID = @UserID)) --in assoc team
+			OR @UserID IN (SELECT DISTINCT CreatedBy FROM ActivityRoster WHERE ActivityID = A.ActivityID) --on the roster
+			OR @UserID IN (SELECT InviteUserID FROM ActivityInvite WHERE ActivityID = A.ActivityID) --invited
+			OR @UserID = A.UserID --created ride
+			OR (SELECT Role FROM Accounts WHERE id = @UserID) = 0 --admin role
+	)
 ORDER BY IsPromoted DESC

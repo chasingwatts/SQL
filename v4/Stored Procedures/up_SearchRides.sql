@@ -138,4 +138,12 @@ WHERE A.IsDeleted = 0
 	AND A.ActivityDate BETWEEN @StartDate AND @EndDate
 	AND RT.DifficultyLevelID = COALESCE(@DifficultyLevelID, RT.DifficultyLevelID)
 	AND RT.Distance BETWEEN @MinDistance AND @MaxDistance
+	AND (
+		A.[IsPrivate] = 0  --not private
+			OR A.TeamID IN (SELECT DISTINCT H.HubID FROM Hub H LEFT OUTER JOIN HubMember HM ON H.HubID = HM.HubID WHERE (HM.UserID = @UserID)) --in assoc team
+			OR @UserID IN (SELECT DISTINCT CreatedBy FROM ActivityRoster WHERE ActivityID = A.ActivityID) --on the roster
+			OR @UserID IN (SELECT InviteUserID FROM ActivityInvite WHERE ActivityID = A.ActivityID) --invited
+			OR @UserID = A.UserID --created ride
+			OR (SELECT Role FROM Accounts WHERE id = @UserID) = 0 --admin role
+	)
 ORDER BY IsPromoted DESC

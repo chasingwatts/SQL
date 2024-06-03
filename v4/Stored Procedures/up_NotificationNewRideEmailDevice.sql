@@ -55,6 +55,7 @@ FROM (
 		AND (N.NewRideEmail = 1 AND N.NewRideApp = 1)
 ) X
 WHERE GeoPt.STDistance(@CurrentLocation) < (X.DefaultRadius * @MetersPerMile) 
+	AND (CASE @Type WHEN 1 THEN X.DeviceID WHEN 2 THEN X.Email END) IS NOT NULL
 ORDER BY 1
 
 
