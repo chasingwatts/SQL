@@ -17,7 +17,7 @@ AS
 ******************************************************************************/
 -- ============================================================================
 -- Testing Parms
--- EXEC up_NotificationNewRideEmailDevice 10, 2
+-- EXEC up_NotificationNewRideEmailDevice 11, 2
 -- DECLARE @ActivityID int
 -- SET @ActivityID = 30834
 -- ============================================================================
@@ -52,10 +52,9 @@ FROM (
 		LEFT JOIN Accounts AA ON P.UserID = AA.Id AND @Type = 2
 		INNER JOIN UserNotification N ON P.UserID = N.UserID
 	WHERE (HomeBaseLat IS NOT NULL AND HomeBaseLng IS NOT NULL)
-		AND (N.NewRideEmail = 1 AND N.NewRideApp = 1)
+		AND ((@Type = 2 AND N.NewRideEmail = 1) OR (@Type = 1 AND N.NewRideApp = 1))
 ) X
 WHERE GeoPt.STDistance(@CurrentLocation) < (X.DefaultRadius * @MetersPerMile) 
 	AND (CASE @Type WHEN 1 THEN X.DeviceID WHEN 2 THEN X.Email END) IS NOT NULL
 ORDER BY 1
-
 

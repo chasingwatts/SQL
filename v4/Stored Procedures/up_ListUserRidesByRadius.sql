@@ -1,13 +1,13 @@
 USE [Mortis]
 GO
 
-DROP PROCEDURE IF EXISTS up_ListUserRidesByRadius
-GO
+--DROP PROCEDURE IF EXISTS up_ListUserRidesByRadius
+--GO
 
-CREATE PROCEDURE up_ListUserRidesByRadius
-	@UserID int,
-	@Radius float
-AS
+--CREATE PROCEDURE up_ListUserRidesByRadius
+--	@UserID int,
+--	@Radius float
+--AS
 --/******************************************************************************
 --*  DBA Script: up_ListUserRidesByRadius
 --*  Created By: Jason Codianne 
@@ -19,10 +19,10 @@ AS
 -- Testing Parms
 -- EXEC up_ListUserRidesByRadius 1, 200
 
- --DECLARE @UserID varchar(100)
- --DECLARE @Radius float
- --SET @UserID = 1
- --SET @Radius = 200
+ DECLARE @UserID varchar(100)
+ DECLARE @Radius float
+ SET @UserID = 1
+ SET @Radius = 200
 
 
 -- ============================================================================
@@ -64,6 +64,7 @@ SELECT
 	A.ActivityNotes,
 	A.EventLink,
 	A.IsPrivate,
+	A.ShareCode,
 	A.IsCancelled,
 	A.IsPromoted,
 	A.IsGroup,

@@ -76,7 +76,8 @@ SELECT
 	U.[Private],
 	CONVERT(bit, CASE WHEN F.FollowingID IS NULL THEN 0 ELSE 1 END)
 FROM (SELECT *, geography::Point(HomeBaseLat, HomeBaseLng, 4326) AS UserGeoPt FROM UserProfile) U
-LEFT OUTER JOIN UserFollowing F ON U.UserID = F.FollowingID
+LEFT OUTER JOIN UserFollowing F ON U.UserID = F.FollowingID	
+	AND F.UserID = @UserID
 	AND F.FollowingID <> @UserID --not self
 WHERE U.IsDeleted = 0
 	AND U.UserGeoPt.STDistance(@CurrentLocation) < @Radius * @MetersPerMile
