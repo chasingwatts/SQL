@@ -114,7 +114,7 @@ LEFT OUTER JOIN Hub H ON A.TeamID = H.HubID
 LEFT OUTER JOIN HubType HT ON H.HubTypeID = HT.HubTypeID
 LEFT OUTER JOIN (SELECT ActivityID, COUNT(ActivityViewID) AS ViewCount FROM ActivityView GROUP BY ActivityID) V ON A.ActivityID = V.ActivityID
 LEFT OUTER JOIN (SELECT ActivityID, COUNT(ActivityLikeID) AS LikeCount FROM ActivityLike GROUP BY ActivityID) L ON A.ActivityID = L.ActivityID
-LEFT OUTER JOIN (SELECT ActivityID, COUNT(ActivityChatID) AS ChatCount FROM ActivityChat GROUP BY ActivityID) C ON A.ActivityID = C.ActivityID
+LEFT OUTER JOIN (SELECT ActivityID, COUNT(ActivityChatID) AS ChatCount FROM ActivityChat WHERE IsDeleted = 0 GROUP BY ActivityID) C ON A.ActivityID = C.ActivityID
 LEFT OUTER JOIN (SELECT R.ActivityID, COUNT(R.ActivityRosterID) AS RosterCount FROM ActivityRoster R WHERE R.ResponseTypeID <> 3 GROUP BY R.ActivityID) R ON A.ActivityID = R.ActivityID
 LEFT OUTER JOIN (SELECT ActivityLikeID, ActivityID, CreatedBy FROM ActivityLike) UL ON A.ActivityID = UL.ActivityID AND UL.CreatedBy = @UserID
 LEFT OUTER JOIN ActivityRoster AR ON A.ActivityID = AR.ActivityID
@@ -122,7 +122,7 @@ LEFT OUTER JOIN ActivityRoster AR ON A.ActivityID = AR.ActivityID
 LEFT OUTER JOIN ResponseType T ON AR.ResponseTypeID = T.ResponseTypeID
 WHERE A.IsDeleted = 0
 			AND CONVERT(datetime, ActivityDate) + CONVERT(datetime, ActivityStartTime) >= @StartDate
-			AND CONVERT(datetime, ActivityDate) + CONVERT(datetime, ActivityStartTime) <= @EndDate
+			AND CONVERT(datetime, ActivityDate) + CONVERT(datetime, ActivityStartTime) <= DATEADD(D, 1, @EndDate)
 			AND ActivityGeoPt.STDistance(@CurrentLocation) < @Radius * @MetersPerMile
 			AND (
 				A.[IsPrivate] = 0  --not private
@@ -132,4 +132,5 @@ WHERE A.IsDeleted = 0
 					OR @UserID = A.UserID --created ride
 					OR (SELECT Role FROM Accounts WHERE id = @UserID) = 0 --admin role
 			)
-ORDER BY IsPromoted DESC
+ORDER BY IsPromoted DESC, ActivityDate ASC, ActivityStartTime ASC
+

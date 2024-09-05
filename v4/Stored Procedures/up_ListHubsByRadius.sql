@@ -22,7 +22,7 @@ AS
  --DECLARE @UserID varchar(100)
  --DECLARE @Radius float
  --SET @UserID = 1
- --SET @Radius = 2000
+ --SET @Radius = 200
 
 
 -- ============================================================================
@@ -41,30 +41,30 @@ SELECT
 FROM UserProfile U WHERE U.UserID = @UserID
 
 SELECT
-	[HubID]
-      ,[HubTypeID]
-      ,[HubName]
-      ,[HubRouteName]
-      ,[HubLat]
-      ,[HubLng]
-      ,[HubAddress]
-      ,[HubAddress2]
-      ,[HubCity]
-      ,[HubState]
-      ,[HubZip]
-      ,[HubCountry]
-      ,[HubPhone]
-      ,[HubEmail]
-      ,[HubUrl]
-      ,[HubLogoUrl]
-      ,[HubSocialUrl]
-      ,[IsPrivate]
-      ,[IsDeleted]
-      ,[CreatedBy]
-      ,[CreatedDate]
-      ,[ModifiedBy]
-      ,[ModifiedDate]
-FROM (SELECT *, geography::Point(HubLat, HubLng, 4326) AS HubGeoPt FROM Hub) H
+	H.HubID, 
+	H.HubTypeID, 
+	H.HubName, 
+	H.HubRouteName, 
+	H.HubLat, 
+	H.HubLng, 
+	H.HubAddress, 
+	H.HubAddress2, 
+	H.HubCity, 
+	H.HubState, 
+	H.HubZip, 
+	H.HubCountry, 
+	H.HubPhone, 
+	H.HubEmail, 
+	H.HubUrl, 
+	H.HubLogoUrl, 
+	H.HubSocialUrl, 
+	H.IsPrivate, 
+	H.IsDeleted, 
+	H.CreatedBy, 
+	H.CreatedDate, 
+	H.ModifiedBy, 
+	H.ModifiedDate
+FROM (SELECT *, geography::Point(HubLat, HubLng, 4326) AS HubGeoPt FROM Hub) H 
 WHERE H.IsDeleted = 0
 	AND HubGeoPt.STDistance(@CurrentLocation) < @Radius * @MetersPerMile
 ORDER BY H.HubName

@@ -1,15 +1,14 @@
 USE [Mortis]
 GO
 
-DROP PROCEDURE IF EXISTS up_NotificationNewRideEmailDevice
+DROP PROCEDURE IF EXISTS up_NotificationNewRideApp
 GO
 
-CREATE PROCEDURE up_NotificationNewRideEmailDevice
-	@ActivityID int,
-	@Type int -- 1: device, 2: email
+CREATE PROCEDURE up_NotificationNewRideApp
+	@ActivityID int
 AS
 /******************************************************************************
-*  DBA Script: up_NotificationNewRideEmailDevice
+*  DBA Script: up_NotificationNewRideApp
 *  Created By: Jason Codianne 
 *  Created:    01/17/2018 
 *  Schema:     dbo
@@ -17,16 +16,18 @@ AS
 ******************************************************************************/
 -- ============================================================================
 -- Testing Parms
--- EXEC up_NotificationNewRideEmailDevice 32096, 2
+-- EXEC up_NotificationNewRideApp 31691
 -- DECLARE @ActivityID int
 -- SET @ActivityID = 30834
 -- ============================================================================
 
 DECLARE @MetersPerMile float = 1609.344
-DECLARE @CurrentLocation geography; 
+DECLARE @CurrentLocation geography
+DECLARE @OwnerID int
 
 SELECT 
-	@CurrentLocation = geography::Point(StartLat, StartLng, 4326) 
+	@CurrentLocation = geography::Point(StartLat, StartLng, 4326),
+	@OwnerID = A.UserID
 FROM Activity A
 WHERE ActivityID = @ActivityID
 
@@ -36,25 +37,21 @@ SELECT DISTINCT
 	X.UserID,
 	X.FirstName,
 	X.LastName,
-	CASE @Type WHEN 1 THEN X.DeviceID WHEN 2 THEN X.Email END AS EmailDevice,
-	CASE @Type WHEN 1 THEN 'Device' WHEN 2 THEN 'Email' END AS EmailDeviceType
+	X.InApp
 FROM ( 
 	SELECT 
 		P.UserID, 
 		P.FirstName,
 		P.LastName,
 		P.DefaultRadius,
-		D.DeviceID,
-		AA.Email,
+		'App' AS InApp,
 		geography::Point(HomeBaseLat, HomeBaseLng, 4326) AS GeoPt 
 	FROM UserProfile P
-		LEFT JOIN UserDevice D ON P.UserID = D.UserID AND @Type = 1
-		LEFT JOIN Accounts AA ON P.UserID = AA.Id AND @Type = 2
 		INNER JOIN UserNotification N ON P.UserID = N.UserID
 	WHERE (HomeBaseLat IS NOT NULL AND HomeBaseLng IS NOT NULL)
-		AND ((@Type = 2 AND N.NewRideEmail = 1) OR (@Type = 1 AND N.NewRideApp = 1))
+		AND N.NewRideApp = 1
 ) X
 WHERE GeoPt.STDistance(@CurrentLocation) < (X.DefaultRadius * @MetersPerMile) 
-	AND (CASE @Type WHEN 1 THEN X.DeviceID WHEN 2 THEN X.Email END) IS NOT NULL
+	AND X.UserID <> @OwnerID
 ORDER BY 1
 
