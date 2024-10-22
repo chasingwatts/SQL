@@ -16,7 +16,7 @@ AS
 ******************************************************************************/
 -- ============================================================================
 -- Testing Parms
--- EXEC up_NotificationNewRideDevice 31691
+-- EXEC up_NotificationNewRideDevice 32167
 -- DECLARE @ActivityID int
 -- SET @ActivityID = 30834
 -- ============================================================================
@@ -31,7 +31,7 @@ SELECT
 FROM Activity A
 WHERE ActivityID = @ActivityID
 
-SELECT DISTINCT 
+SELECT  
 	'Area' AS UserType,
 	@ActivityID AS ActivityID,
 	X.UserID,

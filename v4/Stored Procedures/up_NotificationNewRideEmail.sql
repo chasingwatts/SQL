@@ -16,7 +16,7 @@ AS
 ******************************************************************************/
 -- ============================================================================
 -- Testing Parms
--- EXEC up_NotificationNewRideEmail 31691
+-- EXEC up_NotificationNewRideEmail 32907
 -- DECLARE @ActivityID int
 -- SET @ActivityID = 30834
 -- ============================================================================
@@ -31,7 +31,7 @@ SELECT
 FROM Activity A
 WHERE ActivityID = @ActivityID
 
-SELECT DISTINCT 
+SELECT 
 	'Area' AS UserType,
 	@ActivityID AS ActivityID,
 	X.UserID,
@@ -54,5 +54,5 @@ FROM (
 ) X
 WHERE GeoPt.STDistance(@CurrentLocation) < (X.DefaultRadius * @MetersPerMile) 
 	AND X.UserID <> @OwnerID
-ORDER BY 1
+ORDER BY 3
 

@@ -4,7 +4,7 @@ GO
 DROP PROCEDURE IF EXISTS up_ListMapExplore
 GO
 
-CREATE PROCEDURE up_ListMapExplore
+CREATE PROCEDURE up_ListMapExploreByLatLng
 	@UserID int,
 	@Radius float
 AS
