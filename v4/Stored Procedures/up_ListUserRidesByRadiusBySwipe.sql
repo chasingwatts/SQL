@@ -26,6 +26,12 @@ AS
 
 SET NOCOUNT ON
 
+DECLARE @CurrentLocation geography; 
+
+SELECT 
+	@CurrentLocation = geography::Point(U.HomeBaseLat, U.HomeBaseLng, 4326)
+FROM UserProfile U WHERE U.UserID = @UserID
+
 SELECT
 	A.ActivityID,
 	A.ActivityTypeID,
@@ -47,6 +53,7 @@ SELECT
 	A.StartLat,
 	A.StartLng,
 	A.StartW3W,
+	ISNULL(ROUND((@CurrentLocation.STDistance(A.ActivityGeoPt)) * 0.0006213712, 2), 0) AS DistanceToRide,
 	A.ActivityNotes,
 	A.EventLink,
 	A.IsPrivate,

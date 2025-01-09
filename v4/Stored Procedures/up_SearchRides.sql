@@ -26,7 +26,7 @@ AS
 --******************************************************************************/
 -- ============================================================================
 -- Testing Parms
--- EXEC up_SearchRides 1, 29.4564, -95.46546, 200, null, null, null, null, null, null, null
+-- EXEC up_SearchRides null, 29.4564, -95.46546, 100, null, '01/10/2025', '01/12/2025', null, null, null, null
 
  --DECLARE @UserID varchar(100)
  --DECLARE @Radius float
@@ -45,6 +45,9 @@ DECLARE @MetersPerMile float = 1609.344
 DECLARE @CurrentLocation geography; 
 
 SET @CurrentLocation = geography::Point(@StartLat, @StartLng, 4326)
+
+IF @UserID IS NULL
+	SET @UserID = 0
 
 IF @ActivityName IS NOT NULL	
 	SET @ActivityName = '%' + @ActivityName + '%'
@@ -82,6 +85,7 @@ SELECT
 	A.StartLat,
 	A.StartLng,
 	A.StartW3W,
+	ISNULL(ROUND((@CurrentLocation.STDistance(A.ActivityGeoPt)) * 0.0006213712, 2), 0) AS DistanceToRide,
 	A.ActivityNotes,
 	A.EventLink,
 	A.IsPrivate,

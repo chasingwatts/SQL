@@ -9,7 +9,7 @@ CREATE PROCEDURE up_SearchUserProfile
 	@UserID int
 AS
 
--- EXEC up_SearchUserProfile 'test', 1
+-- EXEC up_SearchUserProfile 'chasing', 1
 --DECLARE @SearchTerm NVARCHAR(100) = 'test';
 --DECLARE @UserID int = 5
 

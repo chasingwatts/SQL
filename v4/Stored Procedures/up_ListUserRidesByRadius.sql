@@ -1,33 +1,31 @@
 USE [Mortis]
 GO
 
---DROP PROCEDURE IF EXISTS up_ListUserRidesByRadius
---GO
+DROP PROCEDURE IF EXISTS up_ListUserRidesByRadius
+GO
 
---CREATE PROCEDURE up_ListUserRidesByRadius
---	@UserID int,
---	@Radius float
---AS
---/******************************************************************************
---*  DBA Script: up_ListUserRidesByRadius
---*  Created By: Jason Codianne 
---*  Created:    10/30/2023 
---*  Schema:     dbo
---*  Purpose:    List activities within a specific radius of home.
---******************************************************************************/
+CREATE PROCEDURE up_ListUserRidesByRadius
+	@UserID int,
+	@Radius float
+AS
+/******************************************************************************
+*  DBA Script: up_ListUserRidesByRadius
+*  Created By: Jason Codianne 
+*  Created:    10/30/2023 
+*  Schema:     dbo
+*  Purpose:    List activities within a specific radius of home.
+******************************************************************************/
+ -- ============================================================================
+ --Testing Parms
+ --EXEC up_ListUserRidesByRadius 1, 100
+
+ --DECLARE @UserID varchar(100)
+ --DECLARE @Radius float
+ --SET @UserID = 1
+ --SET @Radius = 200
+
+
 -- ============================================================================
--- Testing Parms
--- EXEC up_ListUserRidesByRadius 1, 200
-
- DECLARE @UserID varchar(100)
- DECLARE @Radius float
- SET @UserID = 1
- SET @Radius = 200
-
-
--- ============================================================================
-
-SET NOCOUNT ON
 
 DECLARE @UOM int
 DECLARE @UOMName varchar(10)
@@ -61,6 +59,7 @@ SELECT
 	A.StartLat,
 	A.StartLng,
 	A.StartW3W,
+	ISNULL(ROUND((@CurrentLocation.STDistance(A.ActivityGeoPt)) * 0.0006213712, 2), 0) AS DistanceToRide,
 	A.ActivityNotes,
 	A.EventLink,
 	A.IsPrivate,
@@ -98,29 +97,33 @@ SELECT
 	A.ModifiedBy,
 	A.ModifiedDate
 FROM (SELECT *, geography::Point(StartLat, StartLng, 4326) AS ActivityGeoPt FROM Activity) A
-INNER JOIN ActivityType AT ON A.ActivityTypeID = AT.ActivityTypeID
-INNER JOIN UserProfile U ON A.UserID = U.UserID
-LEFT OUTER JOIN Hub H ON A.TeamID = H.HubID
-LEFT OUTER JOIN HubType HT ON H.HubTypeID = HT.HubTypeID
-LEFT OUTER JOIN (SELECT ActivityID, COUNT(ActivityViewID) AS ViewCount FROM ActivityView GROUP BY ActivityID) V ON A.ActivityID = V.ActivityID
-LEFT OUTER JOIN (SELECT ActivityID, COUNT(ActivityLikeID) AS LikeCount FROM ActivityLike GROUP BY ActivityID) L ON A.ActivityID = L.ActivityID
-LEFT OUTER JOIN (SELECT ActivityID, COUNT(ActivityChatID) AS ChatCount FROM ActivityChat WHERE IsDeleted = 0 GROUP BY ActivityID) C ON A.ActivityID = C.ActivityID
-LEFT OUTER JOIN (SELECT R.ActivityID, COUNT(R.ActivityRosterID) AS RosterCount FROM ActivityRoster R WHERE R.ResponseTypeID <> 3 GROUP BY R.ActivityID) R ON A.ActivityID = R.ActivityID
-LEFT OUTER JOIN (SELECT ActivityLikeID, ActivityID, CreatedBy FROM ActivityLike) UL ON A.ActivityID = UL.ActivityID AND UL.CreatedBy = @UserID
-LEFT OUTER JOIN ActivityRoster AR ON A.ActivityID = AR.ActivityID
-	AND AR.CreatedBy = @UserID
-LEFT OUTER JOIN ResponseType T ON AR.ResponseTypeID = T.ResponseTypeID
-WHERE A.IsDeleted = 0
-			AND CONVERT(datetime, ActivityDate) + CONVERT(datetime, ActivityStartTime) >= GETDATE()
-			AND CONVERT(datetime, ActivityDate) + CONVERT(datetime, ActivityStartTime) <= DATEADD(D, 6, GETDATE())
+	INNER JOIN ActivityType AT ON A.ActivityTypeID = AT.ActivityTypeID
+	INNER JOIN UserProfile U ON A.UserID = U.UserID
+	LEFT OUTER JOIN Hub H ON A.TeamID = H.HubID
+	LEFT OUTER JOIN HubType HT ON H.HubTypeID = HT.HubTypeID
+	LEFT OUTER JOIN (SELECT ActivityID, COUNT(ActivityViewID) AS ViewCount FROM ActivityView GROUP BY ActivityID) V ON A.ActivityID = V.ActivityID
+	LEFT OUTER JOIN (SELECT ActivityID, COUNT(ActivityLikeID) AS LikeCount FROM ActivityLike GROUP BY ActivityID) L ON A.ActivityID = L.ActivityID
+	LEFT OUTER JOIN (SELECT ActivityID, COUNT(ActivityChatID) AS ChatCount FROM ActivityChat WHERE IsDeleted = 0 GROUP BY ActivityID) C ON A.ActivityID = C.ActivityID
+	LEFT OUTER JOIN (SELECT R.ActivityID, COUNT(R.ActivityRosterID) AS RosterCount FROM ActivityRoster R WHERE R.ResponseTypeID <> 4 GROUP BY R.ActivityID) R ON A.ActivityID = R.ActivityID
+	LEFT OUTER JOIN (SELECT ActivityLikeID, ActivityID, CreatedBy FROM ActivityLike) UL ON A.ActivityID = UL.ActivityID AND UL.CreatedBy = @UserID
+	LEFT OUTER JOIN ActivityRoster AR ON A.ActivityID = AR.ActivityID
+		AND AR.CreatedBy = @UserID
+	LEFT OUTER JOIN ResponseType T ON AR.ResponseTypeID = T.ResponseTypeID
+WHERE ( 
+		(
+			CONVERT(datetime, A.ActivityDate) + CONVERT(datetime, A.ActivityStartTime) >= DATEADD(HH, -4, GETDATE()) -- add 4 hours back
+			AND CONVERT(datetime, A.ActivityDate) + CONVERT(datetime, A.ActivityStartTime) <= DATEADD(D, 6, GETDATE())
 			AND ActivityGeoPt.STDistance(@CurrentLocation) < @Radius * @MetersPerMile
-			AND (
-				A.[IsPrivate] = 0  --not private
-					OR A.TeamID IN (SELECT DISTINCT H.HubID FROM Hub H LEFT OUTER JOIN HubMember HM ON H.HubID = HM.HubID WHERE (HM.UserID = @UserID)) --in assoc team
-					OR @UserID IN (SELECT DISTINCT CreatedBy FROM ActivityRoster WHERE ActivityID = A.ActivityID) --on the roster
-					OR @UserID IN (SELECT InviteUserID FROM ActivityInvite WHERE ActivityID = A.ActivityID) --invited
-					OR @UserID = A.UserID --created ride
-					OR (SELECT Role FROM Accounts WHERE id = @UserID) = 0 --admin role
-			)
+		)
+		OR (A.IsPromoted = 1 AND ActivityGeoPt.STDistance(@CurrentLocation) < ((@Radius * 2) * @MetersPerMile) AND NOT EXISTS(SELECT 1 FROM ActivityRoster WHERE ActivityID = A.ActivityID AND CreatedBy = @UserID))
+	)
+		AND A.IsDeleted = 0
+		AND (
+			A.[IsPrivate] = 0  --not private
+				OR A.TeamID IN (SELECT DISTINCT H.HubID FROM Hub H LEFT OUTER JOIN HubMember HM ON H.HubID = HM.HubID WHERE (HM.UserID = @UserID)) --in assoc team
+				OR @UserID IN (SELECT DISTINCT CreatedBy FROM ActivityRoster WHERE ActivityID = A.ActivityID) --on the roster
+				OR @UserID IN (SELECT InviteUserID FROM ActivityInvite WHERE ActivityID = A.ActivityID) --invited
+				OR @UserID = A.UserID --created ride
+				OR (SELECT Role FROM Accounts WHERE id = @UserID) = 0 --admin role
+		)
 ORDER BY IsPromoted DESC, ActivityDate ASC, ActivityStartTime ASC
-

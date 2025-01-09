@@ -6,6 +6,7 @@ GO
 
 CREATE PROCEDURE up_ListHubScatterMetrics
 	@TeamID int,
+
 	@StartDate date,
 	@EndDate date
 AS
@@ -19,10 +20,10 @@ AS
 ******************************************************************************/
 -- ============================================================================
 -- Testing Parms/Example
--- EXEC up_ListHubScatterMetrics 1, '12/01/2022', '01/28/2023'
+-- EXEC up_ListHubScatterMetrics 9, '12/01/2023', '01/28/2024'
   
 -- ============================================================================
-SELECT
+SELECT TOP 5
 	A.ActivityID,
 	A.ActivityDate,
 	CONVERT(varchar(15),CAST(A.ActivityStartTime AS TIME),100) AS ActivityStartTime,
@@ -41,8 +42,8 @@ FROM Activity A
 	INNER JOIN ActivityRoute AR ON A.ActivityID = AR.ActivityID
 		AND AR.IsPrimary = 1
 WHERE A.TeamID = @TeamID
-	AND A.ActivityDate BETWEEN @StartDate AND @EndDate
-
+	--AND A.ActivityDate BETWEEN @StartDate AND @EndDate
+ORDER BY ViewCount DESC
 
 
 

@@ -17,7 +17,7 @@ AS
 --******************************************************************************/
 -- ============================================================================
 -- Testing Parms
--- EXEC up_ListHubRidesByRadius 1, 1
+-- EXEC up_ListHubRidesByRadius 9, 1
 
 -- DECLARE @HubID int
 -- DECLARE @UserID int
@@ -34,6 +34,12 @@ DECLARE @UOMName varchar(10)
 DECLARE @UOMFactor float
 DECLARE @MetersPerMile float = 1609.344
 DECLARE @CurrentLocation geography; 
+
+DECLARE @CurrentLocation geography; 
+
+SELECT 
+	@CurrentLocation = geography::Point(U.HomeBaseLat, U.HomeBaseLng, 4326)
+FROM UserProfile U WHERE U.UserID = @UserID
 
 SELECT
 	A.ActivityID,
@@ -56,6 +62,7 @@ SELECT
 	A.StartLat,
 	A.StartLng,
 	A.StartW3W,
+	ISNULL(ROUND((@CurrentLocation.STDistance(A.ActivityGeoPt)) * 0.0006213712, 2), 0) AS DistanceToRide,
 	A.ActivityNotes,
 	A.EventLink,
 	A.IsPrivate,
